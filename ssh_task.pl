@@ -104,6 +104,11 @@ foreach my $server_name (sort keys %$servers){
     $servers->{$server_name}->{task} = $task_tmp;
 }
 
+my $results = {
+    proceeded_server => 0,
+    ignored_server => 0,
+   };
+
 my $pm = Parallel::ForkManager->new($fork_num);
 
 foreach my $server (sort keys %$servers){
@@ -126,6 +131,7 @@ foreach my $server (sort keys %$servers){
 	print "\033[30m\033[46m[$server / $servers->{$server}->{host}]:\033[0m\033[31m Undefined task name: $task\033[0m\n\n";
     }
     if($flag == 1){
+	$results->{proceeded_server}++;
 	my $pid = $pm->start and next;
 	my $ssh = Net::OpenSSH->new(
 	    $servers->{$server}->{host},
@@ -149,8 +155,14 @@ foreach my $server (sort keys %$servers){
 	    }
 	}
 	$pm->finish;
+    }else{
+	$results->{ignored_server}++;
     }
 }
 $pm->wait_all_children;
 
 print "COMPLETED!\n";
+print "--- [SUMMARY] ---\n";
+print "PROCEEDED SERVER: \033[32m$results->{proceeded_server}\033[0m\n";
+print "IGNORED SERVERS : \033[31m$results->{ignored_server}\033[0m\n";
+

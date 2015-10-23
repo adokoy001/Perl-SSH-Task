@@ -95,6 +95,7 @@ A Parallel Remote Command Tool.
    #    max_fork_num => 20,
    #    servers_conf_file => './servers.conf',
    #    tasks_conf_file => './tasks.conf',
+   #    StrictHostKeyChecking => 'yes',
    #}
 
 

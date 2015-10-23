@@ -49,6 +49,11 @@ open(my $fh_tasks,"<$tasks_file") or die "$!$@";
 while(<$fh_tasks>){$tasks_file_content .= $_;}
 close($fh_tasks);
 
+my $strict_host_key = 'StrictHostKeyChecking=yes';
+if(defined($config->{StrictHostKeyChecking}) and $config->{StrictHostKeyChecking} eq 'no'){
+    $strict_host_key = 'StrictHostKeyChecking=no';
+}
+
 if($target_label eq '--server-list'){
     my $counter=0;
     foreach my $key (sort keys %$servers){
@@ -124,6 +129,7 @@ foreach my $server (sort keys %$servers){
 	my $pid = $pm->start and next;
 	my $ssh = Net::OpenSSH->new(
 	    $servers->{$server}->{host},
+	    master_opts => [-o => $strict_host_key],
 	    port => $servers->{$server}->{port},
 	    user => $servers->{$server}->{user},
 	    password => $servers->{$server}->{password}

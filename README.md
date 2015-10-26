@@ -1,9 +1,10 @@
 # Perl-SSH-Task
-================
 
 A Parallel Remote Command Tool.
+================
 
-### SYNOPSIS
+
+## SYNOPSIS
 
 ```
 
@@ -31,16 +32,23 @@ A Parallel Remote Command Tool.
 
 ```
 
-### INSTALLATION and CONFIGURING
+## INSTALLATION and CONFIGURING
+
+
+
+### Clone this repository.
 
 ```
 
-# 1. Clone this repository.
  $ git clone https://github.com/adokoy001/Perl-SSH-Task.git ./my_ssh_task
  $ cd my_ssh_task
 
+```
 
-# 2. Configure tasks.conf
+### Configure tasks.conf
+
+```
+
  $ vim tasks.conf
 
    #{
@@ -53,21 +61,33 @@ A Parallel Remote Command Tool.
    #            ["uptime"]
    #           ],
    #        upgrade_apt => [
-   #            [ {stdin_data => "$servers->{$server_name}->{password}\n"} , "sudo -Sk -p '' "."apt-get update"],
-   #            [ {stdin_data => "$servers->{$server_name}->{password}\n"} , "sudo -Sk -p '' "."apt-get upgrade -y"]
+   #            [ {stdin_data => "$servers->{$server_name}->{password}\n"} ,
+   #              "sudo -Sk -p '' "."apt-get update"],
+   #            [ {stdin_data => "$servers->{$server_name}->{password}\n"} ,
+   #              "sudo -Sk -p '' "."apt-get upgrade -y"]
    #           ],
    #        .
    #        .
    #        .
    #}
 
+```
 
-# 3. Configure servers.conf
+Define tasks into ***tasks.conf*** as shown as(Perl style).
+It should be array reference of array reference.
+
+You can execute any command with sudo by using ***stdin_data*** option and password parameter `$servers->{$server_name}->{password}`.
+
+
+### Configure servers.conf
+
+```
+
  $ vim servers.conf
 
    #{
-   #    my_server_01 => {
-   #        label => ['internal','development','my_favorite'],
+   #    my_server_name_01 => {
+   #        label => ['any_label','internal','development','my_favorite'],
    #        host => 'localhost',
    #        port => 22,
    #        user => 'myname',
@@ -87,8 +107,23 @@ A Parallel Remote Command Tool.
    #       .
    #}
 
+```
 
-# 4. Configure config.conf if needed
+Configure ***servers.conf***.
+
+- label : You can select target servers a given label at execute.
+- host : hostname or IP address
+- port : SSH port
+- user : login user name
+- password : login password
+- general_task : Named available task from tasks.conf
+- specified_task : Literally defined tasks only for this server
+
+
+### Configure config.conf if needed
+
+```
+
  $ vim config.conf
 
    #{
@@ -98,8 +133,18 @@ A Parallel Remote Command Tool.
    #    StrictHostKeyChecking => 'yes',
    #}
 
+```
 
-# 5. Install Required Perl Modules if needed
+- max_fork_num : Maximum number of simultaneous processing
+- servers_conf_file : Config file name for servers
+- tasks_conf_file : Config file name for tasks
+- StrictHostKeyChecking : Useful but dangerous OpenSSH option. If this value set `no`, warning for first time ssh connection will be ignored and '~/.ssh/known_hosts' will be updated automatically.
+
+
+### Install Required Perl Modules if needed
+
+```
+
  $ cpanm --installdeps .
 
 ```

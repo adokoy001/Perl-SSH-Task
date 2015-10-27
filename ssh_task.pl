@@ -8,6 +8,7 @@ my $target_label = $ARGV[0];
 my $task = $ARGV[1];
 my $do_command = $ARGV[2] || "echo 'command is not defined.'";
 
+# Print Usage when no args given
 unless(defined($target_label)){
     print "Usage:\n";
     print "perl ssh_task.pl <list_name>\n";
@@ -23,16 +24,20 @@ unless(defined($target_label)){
     exit;
 }
 
+# For safe eval
 my $safe = Safe->new;
 $safe->permit(qw(time sort));
 
+# Read config.conf to scalar variable.
 my $config_file_content;
 open(my $fh_config,"<./config.conf") or die "$!$@";
 while(<$fh_config>){$config_file_content .= $_;}
 close($fh_config);
 
+# Safe eval. create $config.
 my $config = $safe->reval($config_file_content) or die "$!$@";
 
+# Read *.conf files defined at config.conf
 my $servers_file = $config->{servers_conf_file} || './servers.conf';
 my $tasks_file = $config->{tasks_conf_file} || './tasks.conf';
 my $fork_num = $config->{max_fork_num} || 20;
@@ -49,12 +54,14 @@ open(my $fh_tasks,"<$tasks_file") or die "$!$@";
 while(<$fh_tasks>){$tasks_file_content .= $_;}
 close($fh_tasks);
 
+# Set OpenSSH option StrictHostKeyChecking.
 my $strict_host_key = 'StrictHostKeyChecking=yes';
 if(defined($config->{StrictHostKeyChecking}) and $config->{StrictHostKeyChecking} eq 'no'){
     $strict_host_key = 'StrictHostKeyChecking=no';
 }
 
 if($target_label eq '--server-list'){
+    # Show defined servers when 1st argument is '--server-list'
     my $counter=0;
     foreach my $key (sort keys %$servers){
 	$counter++;
@@ -74,6 +81,7 @@ if($target_label eq '--server-list'){
     print "$counter server(s) registered.\n";
     exit;
 }elsif($target_label eq '--task-list'){
+    # Show defined servers when 1st argument is '--task-list'
     my $command_template = $safe->reval($tasks_file_content) or die "$!$@";
     my $counter=0;
     foreach my $key (sort keys %$command_template){
@@ -84,11 +92,13 @@ if($target_label eq '--server-list'){
     exit;
 }
 
+# When no task given...
 unless(defined($task)){
     print "please give me a task\n";
     exit;
 }
 
+# Do eval for each server for general_task and specified_task
 foreach my $server_name (sort keys %$servers){
     my $command_template = $safe->reval($tasks_file_content) or die "$!$@";
     my $task_tmp;
@@ -98,20 +108,26 @@ foreach my $server_name (sort keys %$servers){
     foreach my $specified_task (sort keys %{$servers->{$server_name}->{specified_task}}){
 	$task_tmp->{$specified_task} = $servers->{$server_name}->{specified_task}->{$specified_task};
     }
+    # Add 'do' task
     $task_tmp->{do} = [[$do_command]];
     $task_tmp->{do_sudo} = [[{stdin_data => "$servers->{$server_name}->{password}\n"} , "sudo -Sk -p '' ".$do_command]];
     $task_tmp->{do_sudo_tty} = [[{tty => 1, stdin_data => "$servers->{$server_name}->{password}\n"} , "sudo -k -p '' ".$do_command]];
     $servers->{$server_name}->{task} = $task_tmp;
 }
 
+# Results
 my $results = {
     proceeded_server => 0,
     ignored_server => 0,
    };
 
 my $server_matched=0;
+
+# Parallel processing by using fork.
 my $pm = Parallel::ForkManager->new($fork_num);
 
+# Main procedure.
+# This foreach loop try to match server name or defined labels and given 1st argument.
 foreach my $server (sort keys %$servers){
     my $label_ref = $servers->{$server}->{label} || [];
     my $flag = 0;
@@ -130,10 +146,12 @@ foreach my $server (sort keys %$servers){
 	    }
 	}
     }
+    # Case: server matched but task unmatched.
     if(($flag == 1) and (!defined($servers->{$server}->{task}->{$task}))){
 	$flag = 0;
 	print "\033[30m\033[46m[$server / $servers->{$server}->{host}]:\033[0m\033[31m Undefined task name: $task\033[0m\n\n";
     }
+    # Proceed given task
     if($flag == 1){
 	$results->{proceeded_server}++;
 	my $pid = $pm->start and next;
@@ -163,6 +181,7 @@ foreach my $server (sort keys %$servers){
 	$results->{ignored_server}++;
     }
 }
+# wait all child process.
 $pm->wait_all_children;
 
 if($server_matched == 0){

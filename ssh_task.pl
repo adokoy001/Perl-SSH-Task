@@ -109,6 +109,7 @@ my $results = {
     ignored_server => 0,
    };
 
+my $server_matched=0;
 my $pm = Parallel::ForkManager->new($fork_num);
 
 foreach my $server (sort keys %$servers){
@@ -116,17 +117,20 @@ foreach my $server (sort keys %$servers){
     my $flag = 0;
     if($target_label eq 'all'){
 	$flag = 1;
+	$server_matched=1;
     }elsif($server eq $target_label){
 	$flag = 1;
+	$server_matched=1;
     }else{
 	for(my $k=0; $k <= $#$label_ref; $k++){
 	    if($label_ref->[$k] eq $target_label){
 		$flag = 1;
+		$server_matched=1;
 		last;
 	    }
 	}
     }
-    unless(defined($servers->{$server}->{task}->{$task})){
+    if(($flag == 1) and (!defined($servers->{$server}->{task}->{$task}))){
 	$flag = 0;
 	print "\033[30m\033[46m[$server / $servers->{$server}->{host}]:\033[0m\033[31m Undefined task name: $task\033[0m\n\n";
     }
@@ -161,8 +165,13 @@ foreach my $server (sort keys %$servers){
 }
 $pm->wait_all_children;
 
-print "COMPLETED!\n";
-print "--- [SUMMARY] ---\n";
-print "PROCEEDED SERVER: \033[32m$results->{proceeded_server}\033[0m\n";
-print "IGNORED SERVERS : \033[31m$results->{ignored_server}\033[0m\n";
-
+if($server_matched == 0){
+    print "NO SERVER MATCHED.\n";
+    print "Try this command:\n";
+    print "  perl ssh_task.pl --server-list\n";
+}else{
+    print "COMPLETED!\n";
+    print "--- [SUMMARY] ---\n";
+    print "PROCEEDED SERVER: \033[32m$results->{proceeded_server}\033[0m\n";
+    print "IGNORED SERVERS : \033[31m$results->{ignored_server}\033[0m\n";
+}

@@ -92,6 +92,7 @@ You can execute any command with sudo by using ***stdin_data*** option and passw
    #        port => 22,
    #        user => 'myname',
    #        password => 'mypassword',
+   #        sudo_password => 'sudo_mypassword',
    #        general_task => {
    #            server_info => 'server_info',
    #            upgrade => 'upgrade_apt',
@@ -115,7 +116,8 @@ Configure ***servers.conf***.
 - host : hostname or IP address
 - port : SSH port
 - user : login user name
-- password : login password
+- password : login password. Set ***undef*** or delete this key when you use public key authentication.
+- sudo_password : password for sudo.
 - general_task : Named available task from tasks.conf
 - specified_task : Literally defined tasks only for this server
 

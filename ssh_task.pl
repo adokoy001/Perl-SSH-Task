@@ -70,11 +70,17 @@ if($target_label eq '--server-list'){
 	    push(@specified_tasks,$key2);
 	}
 	my @labels = @{$servers->{$key}->{label}};
+	my $tmp_host = $servers->{$key}->{host} // 'UNDEFINED';
+	my $tmp_port = $servers->{$key}->{port} // 22;
+	my $tmp_user = $servers->{$key}->{user} // 'UNDEFINED';
+	my $tmp_password = $servers->{$key}->{password} // 'UNDEFINED';
+	my $tmp_sudo_password = $servers->{$key}->{sudo_password} // 'UNDEFINED';
 	print "---- [$key] ----\n";
-	print "  HOST: $servers->{$key}->{host}\n";
-	print "  PORT: $servers->{$key}->{port}\n";
-	print "  USER: $servers->{$key}->{user}\n";
-	print "  PASSWORD: $servers->{$key}->{password}\n";
+	print "  HOST: $tmp_host\n";
+	print "  PORT: $tmp_port\n";
+	print "  USER: $tmp_user\n";
+	print "  PASSWORD: $tmp_password\n";
+	print "  SUDO PASSWORD: $tmp_sudo_password\n";
 	print "  LABEL: [".(join(',',@labels))."]\n";
 	print "  SPECIFIED TASK: [".(join(',',@specified_tasks))."]\n";
     }
@@ -109,9 +115,10 @@ foreach my $server_name (sort keys %$servers){
 	$task_tmp->{$specified_task} = $servers->{$server_name}->{specified_task}->{$specified_task};
     }
     # Add 'do' task
+    my $sudo_password = $servers->{$server_name}->{sudo_password} // $servers->{$server_name}->{password} // '';
     $task_tmp->{do} = [[$do_command]];
-    $task_tmp->{do_sudo} = [[{stdin_data => "$servers->{$server_name}->{password}\n"} , "sudo -Sk -p '' ".$do_command]];
-    $task_tmp->{do_sudo_tty} = [[{tty => 1, stdin_data => "$servers->{$server_name}->{password}\n"} , "sudo -k -p '' ".$do_command]];
+    $task_tmp->{do_sudo} = [[{stdin_data => "$sudo_password\n"} , "sudo -Sk -p '' ".$do_command]];
+    $task_tmp->{do_sudo_tty} = [[{tty => 1, stdin_data => "$sudo_password\n"} , "sudo -k -p '' ".$do_command]];
     $servers->{$server_name}->{task} = $task_tmp;
 }
 
@@ -160,7 +167,7 @@ foreach my $server (sort keys %$servers){
 	    master_opts => [-o => $strict_host_key],
 	    port => $servers->{$server}->{port},
 	    user => $servers->{$server}->{user},
-	    password => $servers->{$server}->{password}
+	    password => $servers->{$server}->{password} // undef,
 	   );
 	if($ssh->error){
 	    print "\033[30m\033[46m[$server / $servers->{$server}->{host}]:\033[0m\033[31m Can't connect to remote server.\033[0m\n\n";

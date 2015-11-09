@@ -165,7 +165,7 @@ foreach my $server (sort keys %$servers){
 	my $ssh = Net::OpenSSH->new(
 	    $servers->{$server}->{host},
 	    master_opts => [-o => $strict_host_key],
-	    port => $servers->{$server}->{port},
+	    port => $servers->{$server}->{port} // 22,
 	    user => $servers->{$server}->{user},
 	    password => $servers->{$server}->{password} // undef,
 	   );
